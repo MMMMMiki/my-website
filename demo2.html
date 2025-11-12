@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>南海先生の挑戦状</title>
+
+<style>
+  :root {
+    --brown-dark: #3b1e14;
+    --brown: #6b4c2b;
+    --paper: #f8f5f0;
+  }
+
+  body {
+    font-family: "游明朝", "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+    background: var(--paper);
+    color: var(--brown-dark);
+    margin: 0;
+    padding: 20px;
+    text-align: center;
+  }
+
+  /* タイトル演出 */
+  .title-wrap {
+    display: inline-block;
+    position: relative;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .title-line {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    width: 0%;
+    background: var(--brown-dark);
+    animation: lineGrow 1s ease forwards;
+  }
+  @keyframes lineGrow { to { width: 100%; } }
+  h1 {
+    font-size: 2rem;
+    margin: 0 0 6px;
+    letter-spacing: 0.12em;
+    color: var(--brown-dark);
+    opacity: 0;
+    transform: translateY(6px);
+    animation: fadeIn 1s ease forwards;
+    animation-delay: 1s;
+  }
+  @keyframes fadeIn { to { opacity: 1; transform: translateY(0);} }
+
+  /* ゲーム本体 */
+  #container {
+    position: relative;
+    width: 90%;
+    max-width: 700px;
+    margin: 40px auto;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .column {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .dot {
+    width: 22px;
+    height: 22px;
+    background: var(--brown);
+    border-radius: 50%;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+
+  .label {
+    font-size: 1.1rem;
+    color: var(--brown-dark);
+  }
+
+  svg#lineLayer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  /* 背景文字 */
+  .background-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    font-size: 2rem;
+    color: rgba(255,255,255,0.85);
+    z-index: 0;
+  }
+
+  #clearBtn {
+    background: var(--brown);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    margin-top: 20px;
+    cursor: pointer;
+  }
+  #clearBtn:hover {
+    background: var(--brown-dark);
+  }
+</style>
+</head>
+<body>
+
+<div class="title-wrap">
+  <div class="title-line"></div>
+  <h1>南海先生の挑戦状</h1>
+</div>
+<p>正しい組み合わせを線で結べ。</p>
+
+<div id="container">
+  <!-- 左側 -->
+  <div class="column left">
+    <div class="item"><div class="label">鶏群の</div><div class="dot" data-side="left" data-id="0"></div></div>
+    <div class="item"><div class="label">怪我の</div><div class="dot" data-side="left" data-id="1"></div></div>
+    <div class="item"><div class="label">濡れ手に</div><div class="dot" data-side="left" data-id="2"></div></div>
+  </div>
+
+  <!-- SVGレイヤー -->
+  <svg id="lineLayer" xmlns="http://www.w3.org/2000/svg">
+    <text x="30%" y="20%" class="background-text">一</text>
+    <text x="65%" y="40%" class="background-text">二</text>
+    <text x="40%" y="65%" class="background-text">三</text>
+    <text x="75%" y="80%" class="background-text">四</text>
+    <text x="10%" y="50%" class="background-text">五</text>
+  </svg>
+
+  <!-- 右側 -->
+  <div class="column right">
+    <div class="item"><div class="dot" data-side="right" data-id="0"></div><div class="label">一鶴</div></div>
+    <div class="item"><div class="dot" data-side="right" data-id="1"></div><div class="label">巧妙</div></div>
+    <div class="item"><div class="dot" data-side="right" data-id="2"></div><div class="label">粟</div></div>
+  </div>
+</div>
+
+<button id="clearBtn">線を消す</button>
+
+<script>
+const svg = document.getElementById("lineLayer");
+let startDot = null;
+let tempLine = null;
+let isDrawing = false;
+
+document.querySelectorAll(".dot").forEach(dot => {
+  dot.addEventListener("mousedown", startDraw);
+  dot.addEventListener("touchstart", e => startDraw(e.touches[0]), { passive:false });
+});
+
+document.addEventListener("mousemove", drawMove);
+document.addEventListener("touchmove", e => drawMove(e.touches[0]), { passive:false });
+document.addEventListener("mouseup", endDraw);
+document.addEventListener("touchend", endDraw);
+
+function startDraw(e) {
+  e.preventDefault();
+  startDot = e.target;
+  const start = getDotCenter(startDot);
+  tempLine = createLine(start.x, start.y, start.x, start.y);
+  svg.appendChild(tempLine);
+  isDrawing = true;
+}
+
+function drawMove(e) {
+  if (!isDrawing || !tempLine) return;
+  const pt = getPointerPos(e);
+  tempLine.setAttribute("x2", pt.x);
+  tempLine.setAttribute("y2", pt.y);
+}
+
+function endDraw(e) {
+  if (!isDrawing || !tempLine) return;
+  const elem = document.elementFromPoint(e.clientX, e.clientY);
+  if (elem && elem.classList.contains("dot") &&
+      elem !== startDot &&
+      startDot.dataset.side !== elem.dataset.side) {
+    const s = getDotCenter(startDot);
+    const t = getDotCenter(elem);
+    tempLine.setAttribute("x1", s.x);
+    tempLine.setAttribute("y1", s.y);
+    tempLine.setAttribute("x2", t.x);
+    tempLine.setAttribute("y2", t.y);
+    tempLine.setAttribute("stroke", "#6b4c2b");
+  } else {
+    tempLine.remove();
+  }
+  tempLine = null;
+  startDot = null;
+  isDrawing = false;
+}
+
+function createLine(x1, y1, x2, y2) {
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  line.setAttribute("x1", x1);
+  line.setAttribute("y1", y1);
+  line.setAttribute("x2", x2);
+  line.setAttribute("y2", y2);
+  line.setAttribute("stroke", "#6b4c2b");
+  line.setAttribute("stroke-width", "4");
+  line.setAttribute("stroke-linecap", "round");
+  line.style.pointerEvents = "none";
+  return line;
+}
+
+function getDotCenter(dot) {
+  const d = dot.getBoundingClientRect();
+  const s = svg.getBoundingClientRect();
+  return {
+    x: d.left + d.width / 2 - s.left,
+    y: d.top + d.height / 2 - s.top
+  };
+}
+
+function getPointerPos(e) {
+  const s = svg.getBoundingClientRect();
+  return {
+    x: e.clientX - s.left,
+    y: e.clientY - s.top
+  };
+}
+
+document.getElementById("clearBtn").addEventListener("click", () => {
+  [...svg.querySelectorAll("line")].forEach(l => l.remove());
+});
+</script>
+
+</body>
+</html>
